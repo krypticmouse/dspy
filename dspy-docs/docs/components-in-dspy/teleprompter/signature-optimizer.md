@@ -99,7 +99,7 @@ Once the training is done you'll have better instructions and prefixes that you'
 
 ```text
 i: "Please answer the question and provide your reasoning for the answer. Your response should be clear and detailed, explaining the rationale behind your decision. Please ensure that your answer is well-reasoned and supported by relevant explanations and examples."
-p: "[Short Answer]
+p: "[Rationale]"
 Average Metric (78.9) ...
 ```
 
@@ -110,9 +110,13 @@ class CoTSignature(dspy.Signature):
     """Please answer the question and provide your reasoning for the answer. Your response should be clear and detailed, explaining the rationale behind your decision. Please ensure that your answer is well-reasoned and supported by relevant explanations and examples."""
 
     question = dspy.InputField(desc="question about something")
-    reasoning = dspy.OutputField(desc="reasoning for the answer")
-    answer = dspy.OutputField(desc="[Answer Evaluation]")
+    reasoning = dspy.OutputField(desc="reasoning for the answer", prefix="[Rationale]")
+    answer = dspy.OutputField(desc="often between 1 and 5 words")
 ```
+
+:::note
+The prefix would be proposed only for the output field that is defined first i.e. reasoning in `CoTSignature`.
+:::
 
 Reinitialize the Pipeline object and reevaluate the pipeline! And now you have a more powerful predictor with more optimized Signature!
 
@@ -141,3 +145,16 @@ Your task is to propose a new instruction that will lead a good language model t
 These two signatures are what give use the optimal instruction and prefixes. Now, the `BasicGenerateInstruction` will generate `n` instruction and prefixes based on the `breadth` parameter, basically `n=breadth`. This happens only one time in the start to seed the instruction attempts.
 
 It uses these instructions and pass them to `GenerateInstructionGivenAttempts` which outputs hopefully a more optimal instruction. This then happens for `m` iterations which is the `depth` parameter in DSPy.
+
+![Signature Optimizer](./img/signature_optimizer_process_v4.png)
+
+Let's break down the process stepwise:
+
+1. **Starting Point:** Use BasicGenerateInstruction to create initial optimized instructions and prefixes. This is based on a basic instruction input.
+2. **Iterative Improvement:** Pass these initial instructions to GenerateInstructionGivenAttempts.
+3. **Repeat Optimization:** In each iteration (up to m times):
+    - Evaluate the current instructions and their effectiveness.
+    - Propose new, more optimized instructions and prefixes based on the evaluation.
+4. **Outcome:** After m iterations, the system ideally converges to a set of highly optimized instructions and corresponding prefixes that lead to better performance of the language model on the given task.
+
+This iterative approach allows for continuous refinement of instructions and prefixes, leveraging the strengths of the teleprompter and improving task performance over time.
